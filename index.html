@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>保險證照考古題</title>
+<style>
+:root{--bg:#eef2fb;--card:#fff;--fg:#1c2330;--muted:#68738a;--accent:#2563eb;--accent2:#7c3aed;--ok:#16a34a;--bad:#dc2626;--border:#dfe6f5;
+ --grad:linear-gradient(135deg,#2563eb 0%,#7c3aed 55%,#db2777 120%)}
+@media(prefers-color-scheme:dark){:root{--bg:#12141f;--card:#1c2030;--fg:#e8ecf4;--muted:#93a0b8;--border:#2b3350}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,'PingFang TC','Microsoft JhengHei',sans-serif;font-size:16px;line-height:1.6}
+body::before{content:'';position:fixed;inset:0;z-index:-1;background:
+ radial-gradient(60% 40% at 15% 0%,rgba(124,58,237,.14),transparent),
+ radial-gradient(50% 35% at 90% 8%,rgba(37,99,235,.13),transparent),
+ radial-gradient(45% 30% at 70% 100%,rgba(219,39,119,.09),transparent)}
+#app{max-width:560px;margin:0 auto;padding:12px 14px calc(20px + env(safe-area-inset-bottom))}
+h1{font-size:23px;margin:12px 0 4px;font-weight:800;
+ background:var(--grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;display:inline-block}
+.sub{color:var(--muted);font-size:13px;margin-bottom:16px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:15px 17px;margin-bottom:13px;
+ box-shadow:0 3px 14px rgba(30,50,120,.07)}
+button{font-family:inherit;font-size:16px;cursor:pointer}
+.big{width:100%;padding:13px;border:none;border-radius:12px;background:var(--grad);color:#fff;font-weight:600;margin-top:6px;
+ box-shadow:0 4px 12px rgba(90,70,220,.32);transition:transform .08s,filter .15s}
+.big:active{transform:scale(.98)}.big:hover{filter:brightness(1.07)}
+.ghost{background:transparent;border:1.5px solid var(--accent);color:var(--accent);box-shadow:none}
+.item{display:flex;justify-content:space-between;align-items:center;padding:13px 4px;border-bottom:1px solid var(--border);cursor:pointer}
+.item:last-child{border-bottom:none}
+.item .n{font-weight:600}
+.item .c{color:var(--muted);font-size:13px}
+.topbar{display:flex;align-items:center;gap:10px;margin:8px 0 12px}
+.topbar button{background:none;border:none;color:var(--accent);font-size:15px;padding:4px 2px;font-weight:600}
+.prog{flex:1;height:7px;border-radius:4px;background:var(--border);overflow:hidden}
+.prog i{display:block;height:100%;background:var(--grad);width:0;transition:width .25s;border-radius:4px}
+.qtext{white-space:pre-wrap;margin:10px 0 16px;font-weight:600;line-height:1.75}
+.opt{display:block;width:100%;text-align:left;background:var(--card);border:1.5px solid var(--border);border-radius:13px;padding:12px 14px;margin-bottom:9px;color:var(--fg);line-height:1.55;transition:border-color .12s,background .12s,transform .06s}
+.opt:not([disabled]):active{transform:scale(.985)}
+.opt.sel{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,var(--card))}
+.opt.correct{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 13%,var(--card));font-weight:600}
+.opt.wrong{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 11%,var(--card))}
+.meta{color:var(--muted);font-size:12px;margin-top:2px}
+.expl{margin-top:10px;font-size:14px;color:var(--muted)}
+.score{text-align:center;padding:28px 10px}
+.score .num{font-size:56px;font-weight:800;background:var(--grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.tag{display:inline-block;padding:2px 11px;border-radius:99px;font-size:12px;margin-right:6px;font-weight:600}
+.tag.t1{background:color-mix(in srgb,#2563eb 13%,var(--card));color:#2563eb}
+.tag.t2{background:color-mix(in srgb,#7c3aed 13%,var(--card));color:#8b5cf6}
+.tag.t3{background:color-mix(in srgb,#db2777 12%,var(--card));color:#db2777}
+.row{display:flex;gap:10px}.row>*{flex:1}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+.chip{padding:7px 14px;border-radius:99px;border:1.5px solid var(--border);background:var(--card);color:var(--fg);font-size:14px;transition:all .12s}
+.chip.on{border-color:transparent;color:#fff;background:linear-gradient(135deg,#2563eb,#7c3aed);font-weight:600;box-shadow:0 2px 8px rgba(90,70,220,.3)}
+label.fld{display:block;margin:12px 0 2px;color:var(--muted);font-size:13px;font-weight:700;letter-spacing:.05em}
+select,input[type=number]{width:100%;padding:11px;border-radius:11px;border:1.5px solid var(--border);background:var(--card);color:var(--fg);font-size:16px}
+.hidden{display:none}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+let BANK=[];
+async function loadBank(){
+  try{
+    const r=await fetch('bank.json'); BANK=await r.json();
+  }catch(e){
+    // file:// fallback: bank.js
+    if(window.BANK_DATA) BANK=window.BANK_DATA;
+  }
+  route();
+}
+const app=document.getElementById('app');
+const state={view:'home',pool:[],idx:0,answers:{},submitted:false,filters:{cls:'',subject:'',year:''},mode:'all',n:20};
+const save=()=>localStorage.setItem('insquiz',JSON.stringify({filters:state.filters,mode:state.mode,n:state.n}));
+const restore=()=>{try{Object.assign(state,JSON.parse(localStorage.getItem('insquiz')||'{}'))}catch(e){}};
+
+function uniq(k){return [...new Set(BANK.map(q=>q[k]))].sort()}
+function filtered(){
+  const f=state.filters;
+  return BANK.filter(q=>(!f.cls||q.cls===f.cls)&&(!f.subject||q.subject===f.subject)&&(!f.year||q.year===f.year));
+}
+function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+
+function route(){render()}
+function home(){
+  state.view='home';render();
+}
+function render(){
+  window.scrollTo(0,0);
+  if(state.view==='home')return vHome();
+  if(state.view==='quiz')return vQuiz();
+  if(state.view==='result')return vResult();
+}
+
+function vHome(){
+  const f=state.filters;
+  const cls=uniq('cls'),subj=uniq('subject'),yrs=uniq('year').reverse();
+  const pool=filtered();
+  const done=JSON.parse(localStorage.getItem('insquiz_stats')||'{"sets":0,"qs":0,"correct":0}');
+  app.innerHTML=`
+  <h1>保險經紀人・代理人・公證人<br>考古題測驗</h1>
+  <div class="sub">題庫共 ${BANK.length} 題｜來源：考選部考畢試題（105–115 年）｜已作答 ${done.qs} 題、正確率 ${done.qs?Math.round(done.correct/done.qs*100):0}%</div>
+  <div class="card">
+    <label class="fld">類科</label>
+    <div class="chips" id="chips-cls">${['<button class="chip '+(f.cls?'':'on')+'" data-v="">全部</button>'].concat(cls.map(c=>`<button class="chip ${f.cls===c?'on':''}" data-v="${c}">${c}</button>`)).join('')}</div>
+    <label class="fld">科目</label>
+    <div class="chips" id="chips-subj">${['<button class="chip '+(f.subject?'':'on')+'" data-v="">全部</button>'].concat(subj.map(c=>`<button class="chip ${f.subject===c?'on':''}" data-v="${c}">${c}</button>`)).join('')}</div>
+    <label class="fld">年度</label>
+    <div class="chips" id="chips-year">${['<button class="chip '+(f.year?'':'on')+'" data-v="">全部</button>'].concat(yrs.map(c=>`<button class="chip ${f.year===c?'on':''}" data-v="${c}">${c}年</button>`)).join('')}</div>
+    <label class="fld">題數</label>
+    <select id="sel-n">
+      <option value="10">10 題（快刷）</option>
+      <option value="20" selected>20 題</option>
+      <option value="40">40 題</option>
+      <option value="9999">全部 ${pool.length} 題</option>
+    </select>
+    <label class="fld">作答方式</label>
+    <div class="chips">
+      <button class="chip ${state.mode==='all'?'on':''}" data-mode="all">逐題即時對答案</button>
+      <button class="chip ${state.mode==='exam'?'on':''}" data-mode="exam">模擬考（最後計分）</button>
+    </div>
+    <button class="big" id="btn-start">開始測驗（可選 ${pool.length} 題）</button>
+  </div>
+  <div class="card">
+    <b>錯題本</b>　<span class="meta">收錄 ${wrongBook().length} 題答錯的題目，答對後自動移出</span>
+    ${wrongBook().length?`<button class="big ghost" id="btn-wrong" style="margin-top:10px">刷錯題（${wrongBook().length} 題）</button>`:'<div class="expl">目前沒有錯題，先去寫幾題吧！</div>'}
+  </div>
+  <div class="card"><b>使用方式</b><br>• 手機瀏覽器開啟本頁即可，可「加入主畫面」當 App 用。<br>• 選項點下立即批改並顯示正確答案與解析。<br>• 資料來源：考選部考畢試題查詢平臺，僅供複習參考。</div>`;
+  const bw=document.getElementById('btn-wrong');
+  if(bw)bw.onclick=startWrong;;
+  document.getElementById('sel-n').value=''+state.n;
+  [['chips-cls','cls'],['chips-subj','subject'],['chips-year','year']].forEach(([id,k])=>{
+    document.getElementById(id).onclick=e=>{
+      const b=e.target.closest('.chip');if(!b)return;
+      state.filters[k]=b.dataset.v;save();vHome();
+    };
+  });
+  document.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>{state.mode=b.dataset.mode;save();vHome()});
+  document.getElementById('btn-start').onclick=start;
+}
+
+function start(){
+  let pool=shuffle(filtered());
+  if(state.n<9000) pool=pool.slice(0,state.n);
+  if(!pool.length){alert('此篩選條件沒有題目');return}
+  state.pool=pool;state.idx=0;state.answers={};state.submitted=false;
+  state.view='quiz';render();
+}
+
+function startWrong(){
+  const w=wrongBook();
+  const pool=BANK.filter(q=>w.includes(q.id));
+  if(!pool.length){alert('錯題本沒有題目');return}
+  state.pool=pool;state.idx=0;state.answers={};state.submitted=false;
+  state.view='quiz';render();
+}
+
+function bumpStat(correct){
+  const s=JSON.parse(localStorage.getItem('insquiz_stats')||'{"sets":0,"qs":0,"correct":0}');
+  s.qs++;if(correct)s.correct++;
+  localStorage.setItem('insquiz_stats',JSON.stringify(s));
+}
+function wrongBook(){return JSON.parse(localStorage.getItem('insquiz_wrong')||'[]')}
+function addWrong(id){
+  const w=wrongBook();
+  if(!w.includes(id)){w.push(id);localStorage.setItem('insquiz_wrong',JSON.stringify(w))}
+}
+function removeWrong(id){
+  let w=wrongBook().filter(x=>x!==id);
+  localStorage.setItem('insquiz_wrong',JSON.stringify(w));
+}
+
+function vQuiz(){
+  const q=state.pool[state.idx];
+  const picked=state.answers[state.idx];
+  const show = state.mode==='all' ? picked!=null : state.submitted;
+  const pct=Math.round((state.idx)/state.pool.length*100);
+  let optsHtml=q.options.map((o,i)=>{
+    const L='ABCDEF'[i];
+    let cl='';
+    if(show){
+      if(L===q.ans)cl=' correct';
+      else if(picked===L)cl=' wrong';
+    }else if(picked===L)cl=' sel';
+    return `<button class="opt${cl}" data-l="${L}" ${show?'disabled':''}>${o}</button>`;
+  }).join('');
+  let expl='';
+  if(show){
+    const ok=picked===q.ans;
+    const ex=q.expl?`<div style="margin-top:8px;padding:10px 12px;border-radius:10px;background:color-mix(in srgb,var(--accent) 6%,var(--card));border:1px solid var(--border);font-size:14px;line-height:1.7"><b style="color:var(--accent)">📖 解析</b><br>${q.expl}</div>`:'';
+    expl=`<div class="expl">${picked==null?'':(ok?'✅ 答對了！':'❌ 答錯了')}　正解：<b>${q.ans}</b></div>${ex}`;
+  }
+  app.innerHTML=`
+  <div class="topbar"><button id="btn-home">← 離開</button><div class="prog"><i style="width:${pct}%"></i></div><span class="meta">${state.idx+1}/${state.pool.length}</span></div>
+  <div class="card">
+    <div class="meta" style="margin-bottom:6px"><span class="tag t1">${q.year}年</span><span class="tag t2">${q.cls}</span><span class="tag t3">${q.subject}</span></div>
+    <div class="qtext">${q.q.replace(/</g,'&lt;')}</div>
+    ${optsHtml}${expl}
+  </div>
+  <div class="row">
+    ${state.idx>0?'<button class="big ghost" id="btn-prev">上一題</button>':'<span></span>'}
+    ${state.idx<state.pool.length-1
+      ?'<button class="big" id="btn-next">下一題</button>'
+      :'<button class="big" id="btn-finish">'+(state.mode==='exam'?'交卷計分':'看結果')+'</button>'}
+  </div>`;
+  document.getElementById('btn-home').onclick=()=>{home()};
+  app.querySelectorAll('.opt').forEach(b=>b.onclick=()=>{
+    const L=b.dataset.l;
+    if(state.mode==='all'){
+      if(state.answers[state.idx]!=null)return; // 已作答
+      state.answers[state.idx]=L;
+      bumpStat(L===q.ans);
+      if(L===q.ans)removeWrong(q.id);else addWrong(q.id);
+    }else{
+      state.answers[state.idx]=L;
+    }
+    vQuiz();
+  });
+  const prev=document.getElementById('btn-prev');if(prev)prev.onclick=()=>{state.idx--;vQuiz()};
+  const next=document.getElementById('btn-next');if(next)next.onclick=()=>{state.idx++;vQuiz()};
+  const fin=document.getElementById('btn-finish');if(fin)fin.onclick=finish;
+}
+
+function finish(){
+  state.submitted=true;
+  // 模擬考模式：交卷時計統計與錯題本
+  if(state.mode==='exam'){
+    state.pool.forEach((q,i)=>{
+      const p=state.answers[i];
+      if(p!=null){
+        bumpStat(p===q.ans);
+        if(p===q.ans)removeWrong(q.id);else addWrong(q.id);
+      }
+    });
+  }
+  state.view='result';render();
+}
+
+function vResult(){
+  let right=0,blank=0;
+  const rows=state.pool.map((q,i)=>{
+    const p=state.answers[i];
+    if(p==null){blank++;return ''}
+    const ok=p===q.ans;if(ok)right++;
+    return `<div class="card" style="border-left:4px solid ${ok?'var(--ok)':'var(--bad)'}">
+      <div class="meta" style="margin-bottom:6px"><span class="tag t1">${q.year}年</span><span class="tag t3">${q.subject}</span></div>
+      <div class="qtext" style="font-size:14px">${q.q.replace(/</g,'&lt;')}</div>
+      <div class="expl">${ok?'✅':'❌ 你的答案：'+p+'；'} 正解：<b>${q.ans}</b></div>
+      ${q.expl?`<div style="margin-top:8px;font-size:13px;line-height:1.7;color:var(--muted)">📖 ${q.expl}</div>`:''}
+    </div>`;
+  }).join('');
+  const score=state.pool.length?Math.round(right/state.pool.length*100):0;
+  app.innerHTML=`
+  <div class="card score">
+    <div style="color:var(--muted)">得分</div>
+    <div class="num">${score}</div>
+    <div>答對 ${right} / ${state.pool.length}　未答 ${blank}</div>
+    <div class="row" style="margin-top:18px">
+      <button class="big ghost" id="btn-review">${rows?'重看錯誤/全部':'檢視作答'}</button>
+      <button class="big" id="btn-again">再來一輪</button>
+    </div>
+  </div>
+  <div id="review" class="${rows?'hidden':''}">${rows||''}</div>`;
+  document.getElementById('btn-again').onclick=start;
+  const rv=document.getElementById('btn-review');
+  if(rows)rv.onclick=()=>document.getElementById('review').classList.toggle('hidden');
+  else rv.style.display='none';
+}
+
+restore();
+loadBank();
+</script>
+</body>
+</html>
